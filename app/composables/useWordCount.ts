@@ -8,15 +8,14 @@ export function useWordCount() {
 
 	async function refresh() {
 		try {
-			const query: Record<string, string> = {};
+			const query: Record<string, string> = {
+				maxWords: String(settings.value.maxWords),
+			};
 			if (settings.value.categories.length > 0) {
 				query.categories = settings.value.categories.join(",");
 			}
 			if (settings.value.levels.length > 0) {
 				query.levels = settings.value.levels.join(",");
-			}
-			if (settings.value.maxWords > 0) {
-				query.maxWords = String(settings.value.maxWords);
 			}
 			const data = await $fetch<{ count: number }>("/api/words/count", {
 				query,

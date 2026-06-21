@@ -19,8 +19,7 @@ export default defineEventHandler(async (event) => {
 		.where(and(...conditions));
 
 	const totalCount = result?.count ?? 0;
-	const effectiveCount =
-		maxWords > 0 ? Math.min(totalCount, maxWords) : totalCount;
+	const effectiveCount = Math.min(totalCount, maxWords);
 
 	return { count: effectiveCount };
 });

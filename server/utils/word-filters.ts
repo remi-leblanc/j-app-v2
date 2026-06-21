@@ -20,7 +20,8 @@ const VALID_CATEGORIES: WordCategory[] = [
 
 const VALID_LEVELS: JlptLevel[] = [1, 2, 3, 4, 5];
 
-export const MAX_WORDS_LIMIT = 100;
+export const DEFAULT_WORD_COUNT = 20;
+export const MAX_WORD_COUNT = 100;
 
 function parseCsvParam(value: string): string[] {
 	if (!value.trim()) return [];
@@ -55,12 +56,12 @@ export function parseLevels(raw: string | string[] | undefined): JlptLevel[] {
 		);
 }
 
-export function parseMaxWords(raw: string | string[] | undefined): number {
-	if (raw === undefined) return 0;
+export function parseWordCount(raw: string | string[] | undefined): number {
+	if (raw === undefined) return DEFAULT_WORD_COUNT;
 	const value = Array.isArray(raw) ? raw[0] : raw;
 	const parsed = Number.parseInt(String(value), 10);
-	if (Number.isNaN(parsed) || parsed <= 0) return 0;
-	return Math.min(parsed, MAX_WORDS_LIMIT);
+	if (Number.isNaN(parsed)) return DEFAULT_WORD_COUNT;
+	return Math.min(Math.max(0, parsed), MAX_WORD_COUNT);
 }
 
 export function parseWordQueryParams(query: Record<string, unknown>) {
@@ -71,7 +72,7 @@ export function parseWordQueryParams(query: Record<string, unknown>) {
 		levels: parseLevels(
 			(query.levels ?? query.jlpt) as string | string[] | undefined,
 		),
-		maxWords: parseMaxWords(
+		maxWords: parseWordCount(
 			query.maxWords as string | string[] | undefined,
 		),
 	};

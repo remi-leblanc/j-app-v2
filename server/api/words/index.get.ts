@@ -32,9 +32,7 @@ export default defineEventHandler(async (event): Promise<GameWordsResponse> => {
 		.orderBy(sql`random()`)
 		.$dynamic();
 
-	if (maxWords > 0) {
-		query = query.limit(maxWords);
-	}
+	query = query.limit(maxWords);
 
 	const wordRows = await query;
 

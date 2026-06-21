@@ -1,7 +1,8 @@
 import {
+	DEFAULT_WORD_COUNT,
 	GAME_MODE_OPTIONS,
 	JLPT_LEVEL_OPTIONS,
-	MAX_WORDS_LIMIT,
+	MAX_WORD_COUNT,
 	WORD_CATEGORY_OPTIONS,
 	type GameMode,
 	type JlptLevel,
@@ -21,11 +22,11 @@ const DEFAULT_SETTINGS: GameSettings = {
 	mode: DEFAULT_GAME_MODE,
 	categories: [],
 	levels: [],
-	maxWords: 0,
+	maxWords: DEFAULT_WORD_COUNT,
 };
 
 export function useGameSettings() {
-	const settings = useState<GameSettings>("game-settings", () => ({
+	const settings = useState<GameSettings>("game-settings-v2", () => ({
 		...DEFAULT_SETTINGS,
 		categories: [...DEFAULT_SETTINGS.categories],
 		levels: [...DEFAULT_SETTINGS.levels],
@@ -41,9 +42,9 @@ export function useGameSettings() {
 		settings.value.mode = mode;
 	}
 
-	function setMaxWords(value: number) {
+	function setWordCount(value: number) {
 		settings.value.maxWords = Math.min(
-			MAX_WORDS_LIMIT,
+			MAX_WORD_COUNT,
 			Math.max(0, Math.round(value)),
 		);
 	}
@@ -107,7 +108,7 @@ export function useGameSettings() {
 	return {
 		settings,
 		setMode,
-		setMaxWords,
+		setWordCount,
 		toggleCategory,
 		toggleLevel,
 		toggleAllCategories,

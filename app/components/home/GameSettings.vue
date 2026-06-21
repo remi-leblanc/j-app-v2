@@ -2,14 +2,14 @@
 import {
 	GAME_MODE_OPTIONS,
 	JLPT_LEVEL_OPTIONS,
-	MAX_WORDS_LIMIT,
+	MAX_WORD_COUNT,
 	WORD_CATEGORY_OPTIONS,
 } from "~/utils/game-constants";
 
 const {
 	settings,
 	setMode,
-	setMaxWords,
+	setWordCount,
 	toggleCategory,
 	toggleLevel,
 	toggleAllCategories,
@@ -126,24 +126,20 @@ const {
 				<fieldset class="fieldset">
 					<div class="flex items-center justify-between gap-4">
 						<legend class="fieldset-legend text-lg font-semibold">
-							Nombre de mots maximum
+							Nombre de mots max.
 						</legend>
 						<span class="text-sm text-base-content/70">
-							{{
-								settings.maxWords === 0
-									? "Illimité"
-									: `${settings.maxWords} mots maximum`
-							}}
+							{{ settings.maxWords }} mots
 						</span>
 					</div>
 					<input
 						type="range"
-						min="0"
-						:max="MAX_WORDS_LIMIT"
+						min="5"
+						:max="MAX_WORD_COUNT"
 						step="5"
 						class="range range-primary w-full"
 						:value="settings.maxWords"
-						@input="setMaxWords(Number(($event.target as HTMLInputElement).value))"
+						@input="setWordCount(Number(($event.target as HTMLInputElement).value))"
 					/>
 				</fieldset>
 			</div>

@@ -4,7 +4,8 @@ export type JlptLevel = 1 | 2 | 3 | 4 | 5;
 
 export type GameMode = "lecture" | "oral" | "qcm";
 
-export const MAX_WORDS_LIMIT = 100;
+export const DEFAULT_WORD_COUNT = 20;
+export const MAX_WORD_COUNT = 100;
 
 export interface WordCategoryOption {
 	value: WordCategory;

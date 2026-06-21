@@ -11,10 +11,8 @@ function launchGame() {
 		mode: settings.value.mode,
 		categories: settings.value.categories.join(","),
 		levels: settings.value.levels.join(","),
+		maxWords: String(settings.value.maxWords),
 	};
-	if (settings.value.maxWords > 0) {
-		query.maxWords = String(settings.value.maxWords);
-	}
 	navigateTo({
 		path: "/play",
 		query,
