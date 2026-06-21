@@ -34,3 +34,8 @@ export interface QcmChoice {
 	text: string;
 	isCorrect: boolean;
 }
+
+export interface QcmChoicesResponse {
+	romajiChoices: QcmChoice[] | null;
+	translationChoices: QcmChoice[] | null;
+}

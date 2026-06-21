@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { GameMode } from "~/utils/game-constants";
 import type { GameWord } from "~/types/game";
-import { canGenerateQcmChoices } from "~/utils/qcm-choices";
 
 const route = useRoute();
 
@@ -23,13 +22,26 @@ const apiQuery = computed(() => {
 	return query;
 });
 
+const qcmFilterQuery = computed(() => {
+	const query: Record<string, string> = {};
+
+	if (route.query.categories) {
+		query.categories = String(route.query.categories);
+	}
+	if (route.query.levels) {
+		query.levels = String(route.query.levels);
+	}
+
+	return query;
+});
+
 const { data, pending, error } = await useFetch<{ words: GameWord[] }>("/api/words", {
 	query: apiQuery,
 });
 
 const words = computed(() => data.value?.words ?? []);
 
-const qcmReady = computed(() => canGenerateQcmChoices(words.value));
+const isQcmMode = computed(() => mode.value === "qcm");
 
 const {
 	phase: lecturePhase,
@@ -66,10 +78,12 @@ const {
 	currentWordNumber: qcmCurrentWordNumber,
 	totalWords: qcmTotalWords,
 	results: qcmResults,
+	choicesPending: qcmChoicesPending,
+	choicesError: qcmChoicesError,
 	selectRomaji,
 	selectTranslation,
 	nextWord: qcmNextWord,
-} = useQcmGame(words);
+} = useQcmGame(words, qcmFilterQuery, isQcmMode);
 </script>
 
 <template>
@@ -105,13 +119,6 @@ const {
 			</div>
 		</div>
 
-		<div v-else-if="mode === 'qcm' && !qcmReady" class="alert alert-warning max-w-lg">
-			<div>
-				<p>Le mode QCM nécessite au moins 4 mots distincts dans la sélection.</p>
-				<NuxtLink to="/" class="btn btn-sm btn-primary mt-4"> Retour à l'accueil </NuxtLink>
-			</div>
-		</div>
-
 		<template v-else-if="mode === 'lecture'">
 			<GameResults v-if="lecturePhase === 'results'" :results="lectureResults" />
 
@@ -135,6 +142,21 @@ const {
 
 		<template v-else-if="mode === 'qcm'">
 			<GameResults v-if="qcmPhase === 'results'" :results="qcmResults" />
+
+			<div v-else-if="qcmChoicesError" class="alert alert-warning max-w-lg">
+				<div>
+					<p>Impossible de générer les choix pour ce mot.</p>
+					<NuxtLink to="/" class="btn btn-sm btn-primary mt-4"> Retour à l'accueil </NuxtLink>
+				</div>
+			</div>
+
+			<div
+				v-else-if="qcmChoicesPending"
+				class="flex flex-col items-center gap-4"
+			>
+				<span class="loading loading-spinner loading-lg" />
+				<p>Chargement des choix…</p>
+			</div>
 
 			<GameQcmCard
 				v-else-if="qcmCurrentWord"

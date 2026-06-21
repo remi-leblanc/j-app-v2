@@ -2,15 +2,15 @@ import type {
 	GameWord,
 	QcmChoice,
 	QcmChoiceId,
+	QcmChoicesResponse,
 	QcmStep,
 } from "~/types/game";
-import {
-	buildRomajiChoices,
-	buildTranslationChoices,
-	pickRandomSense,
-} from "~/utils/qcm-choices";
 
-export function useQcmGame(initialWords: Ref<GameWord[]>) {
+export function useQcmGame(
+	initialWords: Ref<GameWord[]>,
+	filterQuery: Ref<Record<string, string>>,
+	enabled: Ref<boolean>,
+) {
 	const session = useGameSession(initialWords);
 
 	const step = ref<QcmStep>("romaji");
@@ -20,6 +20,10 @@ export function useQcmGame(initialWords: Ref<GameWord[]>) {
 	const selectedTranslationId = ref<QcmChoiceId | null>(null);
 	const romajiCorrect = ref(false);
 	const translationCorrect = ref(false);
+	const choicesPending = ref(false);
+	const choicesError = ref(false);
+
+	let fetchGeneration = 0;
 
 	const selectedRomajiChoice = computed(() =>
 		romajiChoices.value.find((choice) => choice.id === selectedRomajiId.value) ?? null,
@@ -39,25 +43,52 @@ export function useQcmGame(initialWords: Ref<GameWord[]>) {
 		translationChoices.value.find((choice) => choice.isCorrect) ?? null,
 	);
 
-	function initWordChoices() {
+	async function initWordChoices() {
 		const word = session.currentWord.value;
 		if (!word) return;
+
+		const generation = ++fetchGeneration;
 
 		step.value = "romaji";
 		selectedRomajiId.value = null;
 		selectedTranslationId.value = null;
 		romajiCorrect.value = false;
 		translationCorrect.value = false;
+		romajiChoices.value = [];
+		translationChoices.value = [];
+		choicesError.value = false;
+		choicesPending.value = true;
 		session.resetWordTimer();
 
-		const sense = pickRandomSense(word);
-		romajiChoices.value = buildRomajiChoices(word, session.words.value) ?? [];
-		translationChoices.value =
-			buildTranslationChoices(word, session.words.value, sense) ?? [];
+		try {
+			const data = await $fetch<QcmChoicesResponse>("/api/words/qcm-choices", {
+				query: {
+					wordId: word.id,
+					...filterQuery.value,
+				},
+			});
+
+			if (generation !== fetchGeneration) return;
+
+			if (!data.romajiChoices || !data.translationChoices) {
+				choicesError.value = true;
+				return;
+			}
+
+			romajiChoices.value = data.romajiChoices;
+			translationChoices.value = data.translationChoices;
+		} catch {
+			if (generation !== fetchGeneration) return;
+			choicesError.value = true;
+		} finally {
+			if (generation === fetchGeneration) {
+				choicesPending.value = false;
+			}
+		}
 	}
 
 	function selectRomaji(id: QcmChoiceId) {
-		if (step.value !== "romaji") return;
+		if (step.value !== "romaji" || choicesPending.value) return;
 
 		selectedRomajiId.value = id;
 		const choice = romajiChoices.value.find((item) => item.id === id);
@@ -66,7 +97,7 @@ export function useQcmGame(initialWords: Ref<GameWord[]>) {
 	}
 
 	function selectTranslation(id: QcmChoiceId) {
-		if (step.value !== "translation") return;
+		if (step.value !== "translation" || choicesPending.value) return;
 
 		selectedTranslationId.value = id;
 		const choice = translationChoices.value.find((item) => item.id === id);
@@ -90,9 +121,9 @@ export function useQcmGame(initialWords: Ref<GameWord[]>) {
 	}
 
 	watch(
-		() => session.currentWord.value?.id,
-		(wordId) => {
-			if (wordId) initWordChoices();
+		() => [enabled.value, session.currentWord.value?.id] as const,
+		([isEnabled, wordId]) => {
+			if (isEnabled && wordId) initWordChoices();
 		},
 		{ immediate: true },
 	);
@@ -106,6 +137,8 @@ export function useQcmGame(initialWords: Ref<GameWord[]>) {
 		selectedTranslationId,
 		romajiCorrect,
 		translationCorrect,
+		choicesPending,
+		choicesError,
 		selectedRomajiChoice,
 		selectedTranslationChoice,
 		correctRomajiChoice,

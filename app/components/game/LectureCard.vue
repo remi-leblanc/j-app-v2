@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { GameWord } from "~/types/game";
-import { formatAcceptedTranslations, getPrimaryRomajiAnswer } from "~/utils/answer-validation";
 
 const props = defineProps<{
 	word: GameWord;

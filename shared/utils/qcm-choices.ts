@@ -9,7 +9,7 @@ import {
 	getPrimaryRomajiAnswer,
 	normalizeRomaji,
 	normalizeText,
-} from "~/utils/answer-validation";
+} from "~~/shared/utils/answer-validation";
 
 const CHOICE_IDS: QcmChoiceId[] = ["a", "b", "c", "d"];
 const CHOICE_LABELS = ["A", "B", "C", "D"];
@@ -67,11 +67,11 @@ function buildChoices(
 
 export function buildRomajiChoices(
 	currentWord: GameWord,
-	allWords: GameWord[],
+	distractorWords: GameWord[],
 ): QcmChoice[] | null {
 	const correctText = pickRomajiFromWord(currentWord);
 
-	const distractorPool = allWords
+	const distractorPool = distractorWords
 		.filter((word) => word.id !== currentWord.id)
 		.map((word) => pickRomajiFromWord(word));
 
@@ -84,12 +84,12 @@ export function buildRomajiChoices(
 
 export function buildTranslationChoices(
 	currentWord: GameWord,
-	allWords: GameWord[],
+	distractorWords: GameWord[],
 	targetSense: GameWordSense,
 ): QcmChoice[] | null {
 	const correctText = formatSenseText(targetSense.glosses);
 
-	const distractorPool = allWords
+	const distractorPool = distractorWords
 		.filter((word) => word.id !== currentWord.id)
 		.map((word) => formatSenseText(pickRandomSense(word).glosses));
 
@@ -98,20 +98,4 @@ export function buildTranslationChoices(
 		distractorPool,
 		(a, b) => normalizeText(a) === normalizeText(b),
 	);
-}
-
-export function canGenerateQcmChoices(allWords: GameWord[]): boolean {
-	if (allWords.length < 4) return false;
-
-	for (const word of allWords) {
-		if (!buildRomajiChoices(word, allWords)) return false;
-
-		const eligibleSenses = word.senses.slice(0, 2);
-		const hasValidTranslation = eligibleSenses.some((sense) =>
-			buildTranslationChoices(word, allWords, sense),
-		);
-		if (!hasValidTranslation) return false;
-	}
-
-	return true;
 }

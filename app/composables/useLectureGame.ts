@@ -1,8 +1,4 @@
 import type { GameWord } from "~/types/game";
-import {
-	isRomajiCorrect,
-	isTranslationCorrect,
-} from "~/utils/answer-validation";
 
 export function useLectureGame(initialWords: Ref<GameWord[]>) {
 	const session = useGameSession(initialWords);
