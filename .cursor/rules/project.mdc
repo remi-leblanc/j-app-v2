@@ -1,0 +1,134 @@
+---
+alwaysApply: true
+---
+
+# J-App — Règles de développement
+
+## Vue d'ensemble
+
+Application web/mobile d'apprentissage du vocabulaire japonais par flashcards et mini-jeux. Interface en français (multilingue à terme). Public cible : apprenants du japonais, tous niveaux JLPT.
+
+## Stack technique
+
+| Couche    | Technologie                 |
+| --------- | --------------------------- |
+| Langage   | TypeScript (strict)         |
+| Framework | Nuxt v4                     |
+| Style     | TailwindCSS v4 + DaisyUI v4 |
+| BDD       | PostgreSQL                  |
+| ORM       | Drizzle ORM                 |
+
+Respecter strictement ces versions. Ne pas introduire d'autres librairies UI sans validation explicite. Utiliser NPM comme package manager.
+
+---
+
+## Schéma de base de données (Drizzle)
+
+La source de données est **JMDict Simplified** (`jmdict-simplified`, format JSON). Un script d'import peuple la BDD ; seules les colonnes effectivement utilisées par l'app sont persistées.
+
+Le fichier jmdict-simplified est à la racine du projet: `jmdict-all-3.6.2+20260615170427.json.tgz`
+
+Structure d'un mot jmdict-simplified (référence) :
+
+```ts
+{
+  id: string,           // identifiant JMDict
+  kanji: Array<{
+    text: string,       // écriture kanji
+    common: boolean,
+    tags: string[],
+    priority: string[]
+  }>,
+  kana: Array<{
+    text: string,       // lecture hiragana/katakana
+    common: boolean,
+    tags: string[],
+    priority: string[],
+    appliesToKanji: string[]
+  }>,
+  sense: Array<{
+    partOfSpeech: string[],  // ex. ["verb-ichidan", "verb-transitive"]
+    gloss: Array<{
+      lang: string,           // "fra", "eng", "deu"…
+      text: string            // traduction
+    }>,
+    // autres champs ignorés à l'import
+  }>
+}
+```
+
+Un second fichier jmdict "jmdictExtended" (`jmdictExtended-2026-06-16.json.tar.gz`) avec une structure similaire au premier permet de récupérer le niveau JLPT des mots.
+
+Sa structure est la suivante:
+
+```ts
+{"id":"1000280","kanji":[{"common":false,"text":"論う","tags":[],"furigana":[{"ruby":"論","rt":"あげつら"},{"ruby":"う"}],"jlptLevel":null,"pitchAccent":{"hatsuon":"あげ'つら~う","accPatts":"4","zoPatts":"LHHHLL"}}],"kana":[{"common":false,"text":"あげつらう","tags":[],"appliesToKanji":["*"],"jlptLevel":null,"pitchAccent":{"hatsuon":"あげ'つら~う","accPatts":"4","zoPatts":"LHHHLL"}}],"sense":[{"partOfSpeech":["v5u","vt"],"appliesToKanji":["*"],"appliesToKana":["*"],"related":[],"antonym":[],"field":[],"dialect":[],"misc":["uk"],"info":[],"languageSource":[],"gloss":[{"lang":"eng","gender":null,"type":null,"text":"to discuss"}]},{"partOfSpeech":["v5u","vt"],"appliesToKanji":["*"],"appliesToKana":["*"],"related":[],"antonym":[],"field":[],"dialect":[],"misc":["uk"],"info":[],"languageSource":[],"gloss":[{"lang":"eng","gender":null,"type":null,"text":"to find fault with"},{"lang":"eng","gender":null,"type":null,"text":"to criticize"},{"lang":"eng","gender":null,"type":null,"text":"to criticise"}]}]},
+```
+
+## Paramètres de partie (écran d'accueil)
+
+Deux groupes de filtres indépendants, affichés sous forme de checkboxes. Un compteur affiche en temps réel le nombre de mots correspondant aux filtres actifs.
+
+### Types de mots (filtre inclusif — OR)
+
+- `Noms`
+- `Verbes`
+- `Adjectifs`
+- `Adverbes`
+- `Autres`
+
+### Niveaux JLPT (filtre inclusif — OR, intersecté avec les types)
+
+- `N5` `N4` `N3` `N2` `N1`
+
+**Logique de combinaison :** `mots = types_sélectionnés ∩ niveaux_sélectionnés`. Ex. : N5 + N4 + Noms → uniquement les noms de niveau N5 ou N4.
+
+---
+
+## Modes de jeu
+
+### Mode Lecture
+
+Affiche les mots **un par un**, dans l'ordre :
+
+1. **Mot japonais** — écriture la plus courante (kanji si disponible, sinon hiragana/katakana)
+2. **Input romaji** — transcription attendue
+3. **Input traduction française** — traduction attendue
+4. Bouton **Suivant** → déclenche la validation
+
+**Validation :**
+
+- Plusieurs réponses acceptées (liste blanche par mot).
+- Insensible aux accents (normalisation NFD + strip diacritics).
+- Chaque input vire au **vert** (correct) ou **rouge** (incorrect) indépendamment.
+- En cas d'erreur, la correction s'affiche sous l'input concerné.
+- Un mot est compté « raté » si au moins un des deux inputs est incorrect.
+
+**Écran de résultats (fin de partie) :**
+
+- Nombre total de mots
+- Nombre d'erreurs
+- Temps moyen par réponse correcte
+
+### Mode Compréhension orale
+
+Identique au mode Lecture, **sauf** : le mot n'est pas affiché visuellement. Un bouton déclenche la **synthèse vocale (TTS)** du mot en japonais. L'utilisateur saisit ensuite romaji + traduction.
+
+---
+
+## Conventions de code
+
+- **TypeScript strict** partout — pas de `any` sans justification.
+- Composants Nuxt/Vue dans `components/`, pages dans `pages/`, logique métier dans `composables/` ou `utils/`.
+- Les requêtes BDD passent exclusivement par Drizzle ; pas de SQL brut sauf cas exceptionnel documenté.
+- Les styles utilisent les classes Tailwind v4 et les composants DaisyUI v4 ; les CSS custom sont limités au minimum.
+- Les textes affichés à l'utilisateur sont en **français** ; les clés de traduction i18n sont en anglais pour anticiper le multilingue.
+- Chaque mode de jeu est un composant autonome réutilisable.
+
+---
+
+## Internationalisation
+
+- Langue d'interface initiale : **français**.
+- Architecture i18n dès le départ (Nuxt i18n) pour faciliter l'ajout de nouvelles langues.
+- Ne pas hard-coder de chaînes UI dans les templates — utiliser les clés i18n.

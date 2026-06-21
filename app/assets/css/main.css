@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+	themes:
+		light --default,
+		dark --prefersdark,
+		dracula;
+}
+
+@utility progress-rounded-none {
+	@apply rounded-none [&::-webkit-progress-value]:rounded-none [&::-moz-progress-bar]:rounded-none
+}

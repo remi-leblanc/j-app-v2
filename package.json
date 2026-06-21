@@ -1,0 +1,38 @@
+{
+	"name": "j-app",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"build": "nuxt build",
+		"dev": "nuxt dev",
+		"generate": "nuxt generate",
+		"preview": "nuxt preview",
+		"postinstall": "nuxt prepare",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:studio": "drizzle-kit studio",
+		"db:import": "tsx scripts/import-jmdict.ts"
+	},
+	"dependencies": {
+		"@nuxt/icon": "^2.2.3",
+		"@tailwindcss/vite": "^4.3.1",
+		"dotenv": "^17.4.2",
+		"drizzle-orm": "^0.45.2",
+		"nuxt": "^4.4.8",
+		"pg": "^8.22.0",
+		"postgres": "^3.4.9",
+		"stream-chain": "^3.4.0",
+		"stream-json": "^1.9.1",
+		"tailwindcss": "^4.3.1",
+		"tar": "^7.4.3",
+		"vue": "^3.5.35",
+		"vue-router": "^5.1.0",
+		"wanakana": "^5.3.1"
+	},
+	"devDependencies": {
+		"@types/pg": "^8.20.0",
+		"daisyui": "^5.5.23",
+		"drizzle-kit": "^0.31.10",
+		"tsx": "^4.22.4"
+	}
+}

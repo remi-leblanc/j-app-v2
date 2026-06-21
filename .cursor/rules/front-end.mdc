@@ -1,0 +1,5 @@
+---
+description: When writing on a Vue component or HTML or anything related to front-end style.
+alwaysApply: false
+---
+Lorsque tu écris du HTML dans les composants Vue ou n'importe quelle partie du front-end, utilise toujours en priorité les composants DaisyUI plutôt que les classes Tailwind. Recherche le composant DaisyUI le plus proche et adapté aux besoins. N'écris jamais de CSS brut.
