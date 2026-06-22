@@ -1,12 +1,18 @@
 import "dotenv/config";
-import { createReadStream } from "node:fs";
-import path from "node:path";
 import { createGunzip } from "node:zlib";
 import { chain } from "stream-chain";
 import Pick from "stream-json/filters/Pick.js";
 import Parser from "stream-json/Parser.js";
 import StreamArray from "stream-json/streamers/StreamArray.js";
 import { Parser as TarParser } from "tar";
+import {
+	downloadAsset,
+	fetchLatestAssetUrl,
+	JMDICT_EXTENDED_ASSET_PATTERN,
+	JMDICT_EXTENDED_REPO,
+	JMDICT_SIMPLIFIED_ASSET_PATTERN,
+	JMDICT_SIMPLIFIED_REPO,
+} from "../server/db/import/fetch-github-release";
 import {
 	extractJlptLevel,
 	mapJmdictEntry,
@@ -19,8 +25,6 @@ import {
 	updateJlptBatch,
 } from "../server/db/import/insert-batch";
 
-const JMDICT_FILENAME = "jmdict-all-3.6.2+20260615170427.json.tgz";
-const JMDICT_EXTENDED_FILENAME = "jmdictExtended-2026-06-16.json.tar.gz";
 const BATCH_SIZE = 500;
 const PROGRESS_INTERVAL = 5_000;
 
@@ -41,8 +45,8 @@ async function processJsonEntry(
 	}
 }
 
-async function processTarJsonFile(
-	tgzPath: string,
+async function processTarJsonStream(
+	stream: NodeJS.ReadableStream,
 	onEntry: (entry: JmdictEntry) => Promise<void>,
 ): Promise<void> {
 	await new Promise<void>((resolve, reject) => {
@@ -59,12 +63,28 @@ async function processTarJsonFile(
 
 		tarParser.on("error", reject);
 
-		createReadStream(tgzPath).pipe(createGunzip()).pipe(tarParser);
+		stream.pipe(createGunzip()).pipe(tarParser);
 	});
 }
 
+async function resolveAssetUrl(
+	envOverride: string | undefined,
+	repo: string,
+	pattern: RegExp,
+): Promise<{ url: string; name: string }> {
+	if (envOverride) {
+		const name = envOverride.split("/").pop() ?? envOverride;
+		return { url: envOverride, name };
+	}
+	return fetchLatestAssetUrl(repo, pattern);
+}
+
 async function importSimplified(): Promise<void> {
-	const tgzPath = path.resolve(import.meta.dirname, "..", JMDICT_FILENAME);
+	const { url, name } = await resolveAssetUrl(
+		process.env.JMDICT_SIMPLIFIED_URL,
+		JMDICT_SIMPLIFIED_REPO,
+		JMDICT_SIMPLIFIED_ASSET_PATTERN,
+	);
 	const startTime = Date.now();
 
 	let processed = 0;
@@ -99,8 +119,9 @@ async function importSimplified(): Promise<void> {
 		}
 	};
 
-	console.log("Importing jmdict-simplified…");
-	await processTarJsonFile(tgzPath, handleEntry);
+	console.log(`Importing jmdict-simplified (${name})…`);
+	const stream = await downloadAsset(url);
+	await processTarJsonStream(stream, handleEntry);
 	await flushBatch();
 
 	const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -110,10 +131,10 @@ async function importSimplified(): Promise<void> {
 }
 
 async function importJlptLevels(): Promise<void> {
-	const tgzPath = path.resolve(
-		import.meta.dirname,
-		"..",
-		JMDICT_EXTENDED_FILENAME,
+	const { url, name } = await resolveAssetUrl(
+		process.env.JMDICT_EXTENDED_URL,
+		JMDICT_EXTENDED_REPO,
+		JMDICT_EXTENDED_ASSET_PATTERN,
 	);
 	const startTime = Date.now();
 
@@ -153,8 +174,9 @@ async function importJlptLevels(): Promise<void> {
 		}
 	};
 
-	console.log("Importing JLPT levels from jmdictExtended…");
-	await processTarJsonFile(tgzPath, handleEntry);
+	console.log(`Importing JLPT levels from jmdictExtended (${name})…`);
+	const stream = await downloadAsset(url);
+	await processTarJsonStream(stream, handleEntry);
 	await flushBatch();
 
 	const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);

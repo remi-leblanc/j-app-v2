@@ -10,6 +10,7 @@ RUN npm ci
 # Copy source and build
 COPY . .
 RUN npm run build
+RUN npm run build:import
  
 # ── Stage 2: Run ──────────────────────────────────────────────────────────────
 FROM node:24.17.0-alpine AS runner
@@ -19,6 +20,7 @@ WORKDIR /app
 # Nuxt/Nitro bundles everything into .output — no node_modules needed
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/import-jmdict.mjs ./import-jmdict.mjs
  
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
