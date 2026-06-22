@@ -12,7 +12,7 @@
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
 		"db:import": "tsx scripts/import-jmdict.ts",
-		"build:import": "esbuild scripts/import-jmdict.ts --bundle --platform=node --format=esm --outfile=import-jmdict.mjs"
+		"build:import": "node scripts/esbuild.import.mjs"
 	},
 	"dependencies": {
 		"@nuxt/icon": "^2.2.3",
