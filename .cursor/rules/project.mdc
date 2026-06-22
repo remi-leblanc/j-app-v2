@@ -10,13 +10,13 @@ Application web/mobile d'apprentissage du vocabulaire japonais par flashcards et
 
 ## Stack technique
 
-| Couche    | Technologie                 |
-| --------- | --------------------------- |
-| Langage   | TypeScript (strict)         |
-| Framework | Nuxt v4                     |
-| Style     | TailwindCSS v4 + DaisyUI v4 |
-| BDD       | PostgreSQL                  |
-| ORM       | Drizzle ORM                 |
+Langage: TypeScript (strict)
+Framework: Nuxt v4
+Style: TailwindCSS v4 + DaisyUI v4
+BDD: PostgreSQL
+ORM: Drizzle ORM
+Serveur production: VPS OVH (2 VCPU, 4 GB RAM, 40 GB SSD)
+Deploiement production: Coolify (avec Dockerfile)
 
 Respecter strictement ces versions. Ne pas introduire d'autres librairies UI sans validation explicite. Utiliser NPM comme package manager.
 
@@ -24,9 +24,9 @@ Respecter strictement ces versions. Ne pas introduire d'autres librairies UI san
 
 ## Schéma de base de données (Drizzle)
 
-La source de données est **JMDict Simplified** (`jmdict-simplified`, format JSON). Un script d'import peuple la BDD ; seules les colonnes effectivement utilisées par l'app sont persistées.
+La source de données est JMDict Simplified (https://github.com/scriptin/jmdict-simplified). Un script d'import peuple la BDD ; seules les colonnes effectivement utilisées par l'app sont persistées.
 
-Le fichier jmdict-simplified est à la racine du projet: `jmdict-all-3.6.2+20260615170427.json.tgz`
+Le fichier jmdict-simplified est récupéré à chaque export directement depuis la source sur Github, dans sa version release la plus récente.
 
 Structure d'un mot jmdict-simplified (référence) :
 
@@ -57,7 +57,7 @@ Structure d'un mot jmdict-simplified (référence) :
 }
 ```
 
-Un second fichier jmdict "jmdictExtended" (`jmdictExtended-2026-06-16.json.tar.gz`) avec une structure similaire au premier permet de récupérer le niveau JLPT des mots.
+Un second fichier jmdict "jmdictExtended" (https://github.com/Bluskyo/JMDict_Extended) avec une structure similaire au premier permet de récupérer le niveau JLPT des mots.
 
 Sa structure est la suivante:
 
@@ -83,28 +83,32 @@ Deux groupes de filtres indépendants, affichés sous forme de checkboxes. Un co
 
 **Logique de combinaison :** `mots = types_sélectionnés ∩ niveaux_sélectionnés`. Ex. : N5 + N4 + Noms → uniquement les noms de niveau N5 ou N4.
 
+### Nombre de mot maximum
+
+Slider allant de 5 à 100, limitant le nombre de mot sélectionnés. Si davantage de mots correspondent aux autres filtres, les mots sont sélectionnés aléatoirement parmi eux.
+
 ---
 
 ## Modes de jeu
 
 ### Mode Lecture
 
-Affiche les mots **un par un**, dans l'ordre :
+Affiche les mots un par un, dans l'ordre :
 
-1. **Mot japonais** — écriture la plus courante (kanji si disponible, sinon hiragana/katakana)
-2. **Input romaji** — transcription attendue
-3. **Input traduction française** — traduction attendue
-4. Bouton **Suivant** → déclenche la validation
+1. Mot japonais: écriture la plus courante (kanji si disponible, sinon hiragana/katakana)
+2. Input romaji: transcription attendue
+3. Input traduction française: traduction attendue
+4. Bouton Suivant → déclenche la validation
 
-**Validation :**
+Validation :
 
 - Plusieurs réponses acceptées (liste blanche par mot).
 - Insensible aux accents (normalisation NFD + strip diacritics).
-- Chaque input vire au **vert** (correct) ou **rouge** (incorrect) indépendamment.
+- Chaque input vire au vert (correct) ou rouge (incorrect) indépendamment.
 - En cas d'erreur, la correction s'affiche sous l'input concerné.
 - Un mot est compté « raté » si au moins un des deux inputs est incorrect.
 
-**Écran de résultats (fin de partie) :**
+Écran de résultats (fin de partie) :
 
 - Nombre total de mots
 - Nombre d'erreurs
@@ -112,7 +116,13 @@ Affiche les mots **un par un**, dans l'ordre :
 
 ### Mode Compréhension orale
 
-Identique au mode Lecture, **sauf** : le mot n'est pas affiché visuellement. Un bouton déclenche la **synthèse vocale (TTS)** du mot en japonais. L'utilisateur saisit ensuite romaji + traduction.
+Identique au mode Lecture, sauf : le mot n'est pas affiché visuellement. Un bouton joue un fichier audio du mot en japonais. L'utilisateur saisit ensuite romaji + traduction.
+
+### Mode QCM
+
+Identique au mode Lecture, sauf : il n'y a pas d'inputs de romaji et traductions, l'utilisateur ne doit pas écrire manuellement. A la place, 4 choix de transcription romaji lui sont proposés: l'utilisateur doit choisir. Ensuite, 4 choix de traductions sont proposés: l'utilisateur doit choisir. Dans ces 4 choix, 3 sont des mauvaises réponses aléatoire issues des autres mots de la sélection de la partie, et 1 bonne réponse.
+
+Les choix (bonnes ou mauvaises réponses) correspondent à 1 seul sens du mot, et le texte affiché est une concaténation des différentes traductions de ce même sens, le cas échéant.
 
 ---
 
