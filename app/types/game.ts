@@ -38,4 +38,8 @@ export interface QcmChoice {
 export interface QcmChoicesResponse {
 	romajiChoices: QcmChoice[] | null;
 	translationChoices: QcmChoice[] | null;
+	spokenReading: string;
+	audioUrl: string | null;
 }
+
+export type OralStep = "choice" | "feedback";

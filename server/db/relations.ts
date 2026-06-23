@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+	wordAudio,
 	wordGlosses,
 	wordKanji,
 	wordKana,
@@ -12,6 +13,7 @@ export const wordsRelations = relations(words, ({ many }) => ({
 	kanji: many(wordKanji),
 	kana: many(wordKana),
 	senses: many(wordSenses),
+	audio: many(wordAudio),
 }));
 
 export const wordKanjiRelations = relations(wordKanji, ({ one }) => ({
@@ -48,5 +50,12 @@ export const wordPosRelations = relations(wordPos, ({ one }) => ({
 	sense: one(wordSenses, {
 		fields: [wordPos.senseId],
 		references: [wordSenses.id],
+	}),
+}));
+
+export const wordAudioRelations = relations(wordAudio, ({ one }) => ({
+	word: one(words, {
+		fields: [wordAudio.wordId],
+		references: [words.id],
 	}),
 }));

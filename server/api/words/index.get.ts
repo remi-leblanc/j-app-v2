@@ -4,16 +4,21 @@ import { db } from "~~/server/db";
 import { words } from "~~/server/db/schema";
 import { hydrateGameWords } from "~~/server/utils/hydrate-game-words";
 import {
+	buildAudioExistsCondition,
 	buildWordFilterConditions,
 	parseWordQueryParams,
 } from "~~/server/utils/word-filters";
 
 export default defineEventHandler(async (event): Promise<GameWordsResponse> => {
-	const { categories, levels, maxWords } = parseWordQueryParams(
+	const { categories, levels, maxWords, requireAudio } = parseWordQueryParams(
 		getQuery(event),
 	);
 
 	const conditions = buildWordFilterConditions(categories, levels);
+
+	if (requireAudio) {
+		conditions.push(buildAudioExistsCondition());
+	}
 
 	const wordRows = await db
 		.select({ id: words.id })

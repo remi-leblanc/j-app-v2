@@ -14,6 +14,7 @@ const typeToClass: Record<string, string> = {
 	success: "btn-success",
 	warning: "btn-warning",
 	error: "btn-error",
+	neutral: "",
 };
 
 const badgeTypeToClass: Record<string, string> = {
@@ -23,6 +24,7 @@ const badgeTypeToClass: Record<string, string> = {
 	success: "badge-success",
 	warning: "badge-warning",
 	error: "badge-error",
+	neutral: "badge-neutral",
 };
 </script>
 
@@ -30,10 +32,10 @@ const badgeTypeToClass: Record<string, string> = {
 	<button
 		type="button"
 		class="btn btn-soft p-2 w-full text-left font-normal justify-start overflow-hidden whitespace-nowrap text-ellipsis"
-		:class="!onClick ? [typeToClass[type], '!btn-outline', 'pointer-events-none'] : []"
+		:class="!onClick ? [typeToClass[type], 'pointer-events-none'] : []"
 		@click="onClick?.()"
 	>
-		<div class="badge badge-sm px-1.5 rounded-sm font-bold" :class="!onClick ? ['badge-soft', badgeTypeToClass[type]] : ['badge-neutral']">
+		<div class="badge badge-sm px-1.5 rounded-sm font-bold" :class="!onClick ? [badgeTypeToClass[type]] : ['badge-neutral']">
 			{{ choice.label }}
 		</div>
 		{{ choice.text }}

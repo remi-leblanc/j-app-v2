@@ -6,9 +6,9 @@ import {
 	inArray,
 	type SQL,
 } from "drizzle-orm";
-import { db } from "~~/server/db";
-import { wordGlosses, words, wordSenses } from "~~/server/db/schema";
-import type { JlptLevel, WordCategory } from "~~/server/db/import/types";
+import { db } from "../db";
+import { wordAudio, wordGlosses, words, wordSenses } from "../db/schema";
+import type { JlptLevel, WordCategory } from "../db/import/types";
 
 const VALID_CATEGORIES: WordCategory[] = [
 	"nom",
@@ -56,6 +56,12 @@ export function parseLevels(raw: string | string[] | undefined): JlptLevel[] {
 		);
 }
 
+export function parseGlossLangs(
+	raw: string | string[] | undefined,
+): string[] {
+	return parseArrayParam(raw).map((item) => item.toLowerCase());
+}
+
 export function parseWordCount(raw: string | string[] | undefined): number {
 	if (raw === undefined) return DEFAULT_WORD_COUNT;
 	const value = Array.isArray(raw) ? raw[0] : raw;
@@ -75,27 +81,53 @@ export function parseWordQueryParams(query: Record<string, unknown>) {
 		maxWords: parseWordCount(
 			query.maxWords as string | string[] | undefined,
 		),
+		requireAudio: parseRequireAudio(query.requireAudio),
 	};
+}
+
+function parseRequireAudio(
+	raw: string | string[] | boolean | undefined,
+): boolean {
+	if (raw === true) return true;
+	if (raw === undefined) return false;
+	const value = Array.isArray(raw) ? raw[0] : raw;
+	return String(value).toLowerCase() === "true";
+}
+
+export function buildAudioExistsCondition(): SQL {
+	return exists(
+		db
+			.select()
+			.from(wordAudio)
+			.where(eq(wordAudio.wordId, words.id)),
+	);
+}
+
+function buildGlossLangExistsCondition(langs: string[]): SQL {
+	const langCondition =
+		langs.length === 1
+			? eq(wordGlosses.lang, langs[0]!)
+			: inArray(wordGlosses.lang, langs);
+
+	return exists(
+		db
+			.select()
+			.from(wordSenses)
+			.innerJoin(wordGlosses, eq(wordGlosses.senseId, wordSenses.id))
+			.where(and(eq(wordSenses.wordId, words.id), langCondition)),
+	);
 }
 
 export function buildWordFilterConditions(
 	categories: WordCategory[],
 	levels: JlptLevel[],
+	glossLangs: string[] = ["fre"],
 ): SQL[] {
-	const conditions: SQL[] = [
-		exists(
-			db
-				.select()
-				.from(wordSenses)
-				.innerJoin(wordGlosses, eq(wordGlosses.senseId, wordSenses.id))
-				.where(
-					and(
-						eq(wordSenses.wordId, words.id),
-						eq(wordGlosses.lang, "fre"),
-					),
-				),
-		),
-	];
+	const conditions: SQL[] = [];
+
+	if (glossLangs.length > 0) {
+		conditions.push(buildGlossLangExistsCondition(glossLangs));
+	}
 
 	if (categories.length > 0) {
 		conditions.push(arrayOverlaps(words.categories, categories));

@@ -25,3 +25,7 @@ logs
 
 # Import build artifact
 import-jmdict.mjs
+generate-audio-tts.mjs
+
+# Generated TTS audio files
+audio-tts/

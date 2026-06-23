@@ -12,6 +12,7 @@ import {
 	buildTranslationChoices,
 	pickRandomSense,
 } from "~~/shared/utils/qcm-choices";
+import { resolveAudioUrl } from "~~/server/utils/resolve-audio-url";
 
 const DISTRACTOR_POOL_SIZE = 100;
 
@@ -49,6 +50,8 @@ export default defineEventHandler(async (event): Promise<QcmChoicesResponse> => 
 	);
 
 	const targetSense = pickRandomSense(currentWord);
+	const spokenReading = currentWord.displayReading;
+	const audioUrl = await resolveAudioUrl(currentWord.id, spokenReading);
 
 	return {
 		romajiChoices: buildRomajiChoices(currentWord, distractorWords),
@@ -57,5 +60,7 @@ export default defineEventHandler(async (event): Promise<QcmChoicesResponse> => 
 			distractorWords,
 			targetSense,
 		),
+		spokenReading,
+		audioUrl,
 	};
 });

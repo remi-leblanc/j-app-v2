@@ -17,6 +17,9 @@ export function useWordCount() {
 			if (settings.value.levels.length > 0) {
 				query.levels = settings.value.levels.join(",");
 			}
+			if (settings.value.mode === "oral") {
+				query.requireAudio = "true";
+			}
 			const data = await $fetch<{ count: number }>("/api/words/count", {
 				query,
 			});
@@ -34,6 +37,7 @@ export function useWordCount() {
 				settings.value.categories,
 				settings.value.levels,
 				settings.value.maxWords,
+				settings.value.mode,
 			] as const,
 		() => {
 			pending.value = true;

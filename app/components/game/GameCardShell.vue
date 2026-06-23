@@ -7,6 +7,8 @@ defineProps<{
 	totalWords: number;
 	correctCount: number;
 	incorrectCount: number;
+	hideWriting?: boolean;
+	revealWriting?: boolean;
 }>();
 </script>
 
@@ -31,7 +33,13 @@ defineProps<{
 			:max="totalWords"
 		/>
 		<div class="card-body gap-6">
-			<p class="text-center text-4xl font-bold">{{ word.displayWriting }}</p>
+			<p
+				v-if="!hideWriting || revealWriting"
+				class="text-center text-4xl font-bold"
+			>
+				{{ word.displayWriting }}
+			</p>
+			<slot name="header" />
 			<slot />
 		</div>
 	</div>

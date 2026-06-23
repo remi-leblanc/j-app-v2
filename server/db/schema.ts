@@ -5,6 +5,7 @@ import {
 	integer,
 	pgEnum,
 	pgTable,
+	primaryKey,
 	serial,
 	text,
 	timestamp,
@@ -121,6 +122,21 @@ export const wordPos = pgTable(
 	],
 );
 
+export const wordAudio = pgTable(
+	"word_audio",
+	{
+		wordId: text("word_id")
+			.notNull()
+			.references(() => words.id, { onDelete: "cascade" }),
+		reading: text("reading").notNull(),
+		createdAt: timestamp("created_at").defaultNow().notNull(),
+	},
+	(table) => [
+		primaryKey({ columns: [table.wordId, table.reading] }),
+		index("word_audio_word_id_idx").on(table.wordId),
+	],
+);
+
 export type Word = InferSelectModel<typeof words>;
 export type NewWord = InferInsertModel<typeof words>;
 
@@ -138,3 +154,6 @@ export type NewWordGloss = InferInsertModel<typeof wordGlosses>;
 
 export type WordPos = InferSelectModel<typeof wordPos>;
 export type NewWordPos = InferInsertModel<typeof wordPos>;
+
+export type WordAudio = InferSelectModel<typeof wordAudio>;
+export type NewWordAudio = InferInsertModel<typeof wordAudio>;

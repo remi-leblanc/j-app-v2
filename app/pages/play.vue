@@ -18,6 +18,9 @@ const apiQuery = computed(() => {
 	if (route.query.maxWords) {
 		query.maxWords = String(route.query.maxWords);
 	}
+	if (mode.value === "oral") {
+		query.requireAudio = "true";
+	}
 
 	return query;
 });
@@ -42,6 +45,7 @@ const { data, pending, error } = await useFetch<{ words: GameWord[] }>("/api/wor
 const words = computed(() => data.value?.words ?? []);
 
 const isQcmMode = computed(() => mode.value === "qcm");
+const isOralMode = computed(() => mode.value === "oral");
 
 const {
 	phase: lecturePhase,
@@ -67,12 +71,8 @@ const {
 	step: qcmStep,
 	romajiChoices,
 	translationChoices,
-	romajiCorrect: qcmRomajiCorrect,
-	translationCorrect: qcmTranslationCorrect,
-	selectedRomajiChoice,
-	selectedTranslationChoice,
-	correctRomajiChoice,
-	correctTranslationChoice,
+	selectedRomajiId: qcmSelectedRomajiId,
+	selectedTranslationId: qcmSelectedTranslationId,
 	correctCount: qcmCorrectCount,
 	errorCount: qcmErrorCount,
 	currentWordNumber: qcmCurrentWordNumber,
@@ -84,6 +84,48 @@ const {
 	selectTranslation,
 	nextWord: qcmNextWord,
 } = useQcmGame(words, qcmFilterQuery, isQcmMode);
+
+const {
+	phase: oralPhase,
+	currentWord: oralCurrentWord,
+	step: oralStep,
+	translationChoices: oralTranslationChoices,
+	selectedTranslationId: oralSelectedTranslationId,
+	audioUrl: oralAudioUrl,
+	correctCount: oralCorrectCount,
+	errorCount: oralErrorCount,
+	currentWordNumber: oralCurrentWordNumber,
+	totalWords: oralTotalWords,
+	results: oralResults,
+	choicesPending: oralChoicesPending,
+	choicesError: oralChoicesError,
+	selectTranslation: oralSelectTranslation,
+	nextWord: oralNextWord,
+} = useOralGame(words, qcmFilterQuery, isOralMode);
+
+const {
+	isPlaying: oralIsPlaying,
+	isLoading: oralIsAudioLoading,
+	error: oralAudioError,
+	play: playOralAudio,
+	stop: stopOralAudio,
+} = useJapaneseSpeech();
+
+watch(
+	() => oralCurrentWord.value?.id,
+	() => stopOralAudio(),
+);
+
+function handlePlayOralAudio() {
+	if (oralAudioUrl.value) {
+		playOralAudio(oralAudioUrl.value);
+	}
+}
+
+function handleOralNext() {
+	stopOralAudio();
+	oralNextWord();
+}
 </script>
 
 <template>
@@ -99,15 +141,7 @@ const {
 		<div class="navbar-end"></div>
 	</div>
 	<div class="flex min-h-screen items-center justify-center p-4">
-		<div v-if="mode === 'oral'" class="card w-full max-w-lg bg-base-100 shadow-xl">
-			<div class="card-body items-center text-center">
-				<h2 class="card-title">Mode non disponible</h2>
-				<p>Le mode compréhension orale sera disponible prochainement.</p>
-				<NuxtLink to="/" class="btn btn-primary">Retour à l'accueil</NuxtLink>
-			</div>
-		</div>
-
-		<div v-else-if="pending" class="flex flex-col items-center gap-4">
+		<div v-if="pending" class="flex flex-col items-center gap-4">
 			<span class="loading loading-spinner loading-lg" />
 			<p>Chargement des mots…</p>
 		</div>
@@ -164,12 +198,8 @@ const {
 				:step="qcmStep"
 				:romaji-choices="romajiChoices"
 				:translation-choices="translationChoices"
-				:romaji-correct="qcmRomajiCorrect"
-				:translation-correct="qcmTranslationCorrect"
-				:selected-romaji-choice="selectedRomajiChoice"
-				:selected-translation-choice="selectedTranslationChoice"
-				:correct-romaji-choice="correctRomajiChoice"
-				:correct-translation-choice="correctTranslationChoice"
+				:selected-romaji-id="qcmSelectedRomajiId"
+				:selected-translation-id="qcmSelectedTranslationId"
 				:current-word-number="qcmCurrentWordNumber"
 				:total-words="qcmTotalWords"
 				:correct-count="qcmCorrectCount"
@@ -177,6 +207,44 @@ const {
 				@select-romaji="selectRomaji($event)"
 				@select-translation="selectTranslation($event)"
 				@next="qcmNextWord()"
+			/>
+		</template>
+
+		<template v-else-if="mode === 'oral'">
+			<GameResults v-if="oralPhase === 'results'" :results="oralResults" />
+
+			<div v-else-if="oralChoicesError" class="alert alert-warning max-w-lg">
+				<div>
+					<p>Impossible de charger l'audio ou les choix pour ce mot.</p>
+					<NuxtLink to="/" class="btn btn-sm btn-primary mt-4"> Retour à l'accueil </NuxtLink>
+				</div>
+			</div>
+
+			<div
+				v-else-if="oralChoicesPending"
+				class="flex flex-col items-center gap-4"
+			>
+				<span class="loading loading-spinner loading-lg" />
+				<p>Chargement des choix…</p>
+			</div>
+
+			<GameOralCard
+				v-else-if="oralCurrentWord"
+				:word="oralCurrentWord"
+				:step="oralStep"
+				:translation-choices="oralTranslationChoices"
+				:selected-translation-id="oralSelectedTranslationId"
+				:audio-url="oralAudioUrl"
+				:is-playing="oralIsPlaying"
+				:is-audio-loading="oralIsAudioLoading"
+				:audio-error="oralAudioError"
+				:current-word-number="oralCurrentWordNumber"
+				:total-words="oralTotalWords"
+				:correct-count="oralCorrectCount"
+				:incorrect-count="oralErrorCount"
+				@play-audio="handlePlayOralAudio()"
+				@select-translation="oralSelectTranslation($event)"
+				@next="handleOralNext()"
 			/>
 		</template>
 	</div>
