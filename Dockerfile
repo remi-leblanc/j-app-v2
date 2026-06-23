@@ -17,6 +17,9 @@ RUN npm run build:audio
 FROM node:24.17.0-alpine AS runner
  
 WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev 
  
 # Nuxt/Nitro bundles everything into .output — no node_modules needed
 COPY --from=builder /app/.output ./.output
