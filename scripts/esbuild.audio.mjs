@@ -37,5 +37,4 @@ await esbuild.build({
 	banner: {
 		js: `import { createRequire } from "module";\nconst require = createRequire(import.meta.url);`,
 	},
-	external: ["@google-cloud/text-to-speech"],
 });
