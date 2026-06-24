@@ -10,8 +10,7 @@ RUN npm ci
 # Copy source and build
 COPY . .
 RUN npm run build
-RUN npm run build:import
-RUN npm run build:audio
+RUN npm run build:scripts
  
 # ── Stage 2: Run ──────────────────────────────────────────────────────────────
 FROM node:24.17.0-alpine AS runner
