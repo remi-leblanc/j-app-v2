@@ -5,6 +5,8 @@ defineProps<{
 	results: GameSessionResults;
 }>();
 
+const { settings } = useUserSettings();
+
 function formatAverageTime(ms: number): string {
 	if (ms <= 0) return "—";
 	return `${(ms / 1000).toFixed(1)} s`;
@@ -12,6 +14,7 @@ function formatAverageTime(ms: number): string {
 
 onMounted(() => {
 	fireGameResultsConfetti();
+	playSound("/sounds/victory-jingle.mp3", settings.value.effectsVolume);
 });
 </script>
 

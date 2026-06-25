@@ -38,7 +38,7 @@ const emit = defineEmits<{
 		:total-words="totalWords"
 		:correct-count="correctCount"
 		:incorrect-count="incorrectCount"
-		:word-correct="step === 'feedback' && romajiCorrect && translationCorrect"
+		:word-correct="step === 'feedback' ? romajiCorrect && translationCorrect : undefined"
 	>
 		<div v-if="step === 'romaji' || step === 'feedback'" class="flex flex-col gap-2">
 			<h3 class="font-semibold">Romaji</h3>

@@ -114,7 +114,7 @@ watch(
 		:total-words="totalWords"
 		:correct-count="correctCount"
 		:incorrect-count="incorrectCount"
-		:word-correct="isValidated && romajiCorrect && translationCorrect"
+		:word-correct="isValidated ? romajiCorrect && translationCorrect : undefined"
 	>
 		<fieldset class="fieldset gap-2">
 			<label class="label" for="romaji-input">Romaji</label>
@@ -156,9 +156,7 @@ watch(
 		</fieldset>
 
 		<div class="card-actions justify-end">
-			<button type="button" class="btn btn-primary" :disabled="!isValidated && !canValidate" @click="handleNextClick">
-				Suivant
-			</button>
+			<button type="button" class="btn btn-primary" :disabled="!isValidated && !canValidate" @click="handleNextClick">Suivant</button>
 		</div>
 	</GameCardShell>
 </template>

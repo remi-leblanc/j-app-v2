@@ -12,12 +12,18 @@ const props = defineProps<{
 	wordCorrect?: boolean;
 }>();
 
+const { settings } = useUserSettings();
+
+function playValidationSound(correct: boolean): void {
+	playSound(correct ? "/sounds/success.mp3" : "/sounds/error.mp3", settings.value.effectsVolume);
+}
+
 watch(
 	() => props.wordCorrect,
 	(isCorrect, wasCorrect) => {
-		if (isCorrect && !wasCorrect) {
-			fireWordCorrectStars();
-		}
+		if (isCorrect === undefined || wasCorrect !== undefined) return;
+		playValidationSound(isCorrect);
+		if (isCorrect) fireWordCorrectStars();
 	},
 );
 </script>
@@ -37,16 +43,9 @@ watch(
 				</div>
 			</div>
 		</div>
-		<progress
-			class="progress progress-primary progress-rounded-none w-full h-1"
-			:value="currentWordNumber"
-			:max="totalWords"
-		/>
+		<progress class="progress progress-primary progress-rounded-none w-full h-1" :value="currentWordNumber" :max="totalWords" />
 		<div class="card-body gap-6">
-			<p
-				v-if="!hideWriting || revealWriting"
-				class="text-center text-4xl font-bold"
-			>
+			<p v-if="!hideWriting || revealWriting" class="text-center text-4xl font-bold">
 				{{ word.displayWriting }}
 			</p>
 			<slot name="header" />

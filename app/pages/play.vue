@@ -254,4 +254,6 @@ function handleOralNext() {
 			/>
 		</template>
 	</div>
+
+	<GamePlaySettingsMenu :show-pronunciation-volume="isOralMode" />
 </template>

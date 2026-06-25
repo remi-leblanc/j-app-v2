@@ -1,4 +1,5 @@
 export function useJapaneseSpeech() {
+	const { settings } = useUserSettings();
 	const audio = ref<HTMLAudioElement | null>(null);
 	const isPlaying = ref(false);
 	const isLoading = ref(false);
@@ -44,6 +45,7 @@ export function useJapaneseSpeech() {
 		error.value = false;
 
 		const element = new Audio(url);
+		element.volume = settings.value.pronunciationVolume;
 		audio.value = element;
 
 		onEnded = () => {
