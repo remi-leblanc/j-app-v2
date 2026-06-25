@@ -9,10 +9,14 @@ function formatAverageTime(ms: number): string {
 	if (ms <= 0) return "—";
 	return `${(ms / 1000).toFixed(1)} s`;
 }
+
+onMounted(() => {
+	fireGameResultsConfetti();
+});
 </script>
 
 <template>
-	<div class="card w-full max-w-lg bg-base-200 shadow-xl">
+	<div class="card w-full max-w-lg bg-base-200 shadow-xl z-10">
 		<div class="card-body gap-6">
 			<h2 class="card-title justify-center text-2xl">Résultats</h2>
 			<div class="stats stats-vertical w-full sm:stats-horizontal">

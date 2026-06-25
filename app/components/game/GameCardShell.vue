@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GameWord } from "~/types/game";
 
-defineProps<{
+const props = defineProps<{
 	word: GameWord;
 	currentWordNumber: number;
 	totalWords: number;
@@ -9,11 +9,21 @@ defineProps<{
 	incorrectCount: number;
 	hideWriting?: boolean;
 	revealWriting?: boolean;
+	wordCorrect?: boolean;
 }>();
+
+watch(
+	() => props.wordCorrect,
+	(isCorrect, wasCorrect) => {
+		if (isCorrect && !wasCorrect) {
+			fireWordCorrectStars();
+		}
+	},
+);
 </script>
 
 <template>
-	<div class="card overflow-hidden w-full max-w-xs bg-base-200 shadow-xl">
+	<div class="card overflow-hidden w-full max-w-xs bg-base-200 shadow-xl z-10">
 		<div class="card-body bg-base-300 py-4">
 			<div class="flex items-center justify-between text-lg">
 				<div>

@@ -114,6 +114,7 @@ watch(
 		:total-words="totalWords"
 		:correct-count="correctCount"
 		:incorrect-count="incorrectCount"
+		:word-correct="isValidated && romajiCorrect && translationCorrect"
 	>
 		<fieldset class="fieldset gap-2">
 			<label class="label" for="romaji-input">Romaji</label>

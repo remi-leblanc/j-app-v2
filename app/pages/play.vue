@@ -73,6 +73,8 @@ const {
 	translationChoices,
 	selectedRomajiId: qcmSelectedRomajiId,
 	selectedTranslationId: qcmSelectedTranslationId,
+	romajiCorrect: qcmRomajiCorrect,
+	translationCorrect: qcmTranslationCorrect,
 	correctCount: qcmCorrectCount,
 	errorCount: qcmErrorCount,
 	currentWordNumber: qcmCurrentWordNumber,
@@ -91,6 +93,7 @@ const {
 	step: oralStep,
 	translationChoices: oralTranslationChoices,
 	selectedTranslationId: oralSelectedTranslationId,
+	translationCorrect: oralTranslationCorrect,
 	audioUrl: oralAudioUrl,
 	correctCount: oralCorrectCount,
 	errorCount: oralErrorCount,
@@ -200,6 +203,8 @@ function handleOralNext() {
 				:translation-choices="translationChoices"
 				:selected-romaji-id="qcmSelectedRomajiId"
 				:selected-translation-id="qcmSelectedTranslationId"
+				:romaji-correct="qcmRomajiCorrect"
+				:translation-correct="qcmTranslationCorrect"
 				:current-word-number="qcmCurrentWordNumber"
 				:total-words="qcmTotalWords"
 				:correct-count="qcmCorrectCount"
@@ -234,6 +239,7 @@ function handleOralNext() {
 				:step="oralStep"
 				:translation-choices="oralTranslationChoices"
 				:selected-translation-id="oralSelectedTranslationId"
+				:translation-correct="oralTranslationCorrect"
 				:audio-url="oralAudioUrl"
 				:is-playing="oralIsPlaying"
 				:is-audio-loading="oralIsAudioLoading"

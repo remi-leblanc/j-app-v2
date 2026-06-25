@@ -15,6 +15,8 @@ const props = defineProps<{
 	totalWords: number;
 	correctCount: number;
 	incorrectCount: number;
+	romajiCorrect: boolean;
+	translationCorrect: boolean;
 }>();
 
 function visibleChoices(choices: QcmChoice[], selectedId: QcmChoiceId | null): QcmChoice[] {
@@ -30,7 +32,14 @@ const emit = defineEmits<{
 </script>
 
 <template>
-	<GameCardShell :word="word" :current-word-number="currentWordNumber" :total-words="totalWords" :correct-count="correctCount" :incorrect-count="incorrectCount">
+	<GameCardShell
+		:word="word"
+		:current-word-number="currentWordNumber"
+		:total-words="totalWords"
+		:correct-count="correctCount"
+		:incorrect-count="incorrectCount"
+		:word-correct="step === 'feedback' && romajiCorrect && translationCorrect"
+	>
 		<div v-if="step === 'romaji' || step === 'feedback'" class="flex flex-col gap-2">
 			<h3 class="font-semibold">Romaji</h3>
 

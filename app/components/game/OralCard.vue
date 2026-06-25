@@ -20,6 +20,7 @@ const props = defineProps<{
 	totalWords: number;
 	correctCount: number;
 	incorrectCount: number;
+	translationCorrect: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -48,6 +49,7 @@ watch(
 		:incorrect-count="incorrectCount"
 		:hide-writing="step !== 'feedback'"
 		:reveal-writing="step === 'feedback'"
+		:word-correct="step === 'feedback' && translationCorrect"
 	>
 		<template v-if="step === 'choice'" #header>
 			<div class="flex flex-col items-center gap-2">
