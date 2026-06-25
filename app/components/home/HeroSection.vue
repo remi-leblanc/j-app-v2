@@ -5,7 +5,7 @@ defineExpose({ heroRef });
 </script>
 
 <template>
-	<div ref="heroRef" class="hero min-h-[50vh] bg-base-200">
+	<div ref="heroRef" class="hero min-h-[30vh] bg-base-200">
 		<div class="hero-content text-center">
 			<div class="max-w-md">
 				<h1 class="text-5xl font-bold">J-App</h1>

@@ -33,7 +33,7 @@ const {
 						<label
 							v-for="option in GAME_MODE_OPTIONS"
 							:key="option.value"
-							class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-300 p-4"
+							class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-300 p-4 text-wrap"
 							:class="{
 								'border-primary bg-primary/5': settings.mode === option.value,
 							}"

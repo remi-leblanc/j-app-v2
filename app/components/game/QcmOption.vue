@@ -31,7 +31,7 @@ const badgeTypeToClass: Record<string, string> = {
 <template>
 	<button
 		type="button"
-		class="btn btn-soft p-2 w-full text-left font-normal justify-start overflow-hidden whitespace-nowrap text-ellipsis"
+		class="btn btn-soft p-2 w-full text-left font-normal justify-start h-auto"
 		:class="!onClick ? [typeToClass[type], 'pointer-events-none'] : []"
 		@click="onClick?.()"
 	>
