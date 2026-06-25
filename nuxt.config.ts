@@ -11,4 +11,9 @@ export default defineNuxtConfig({
 	},
 
 	modules: ["@nuxt/icon"],
+	app: {
+		head: {
+			title: "J-App",
+		},
+	},
 });
