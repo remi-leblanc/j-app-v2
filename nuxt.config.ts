@@ -10,7 +10,7 @@ export default defineNuxtConfig({
 		plugins: [tailwindcss()],
 	},
 
-	modules: ["@nuxt/icon"],
+	modules: ["@nuxt/icon", "@nuxt/test-utils/module"],
 	app: {
 		head: {
 			title: "J-App",

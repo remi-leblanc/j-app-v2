@@ -35,10 +35,14 @@
 		"wanakana": "^5.3.1"
 	},
 	"devDependencies": {
+		"@nuxt/test-utils": "^4.0.3",
 		"@types/pg": "^8.20.0",
+		"@vue/test-utils": "^2.4.11",
 		"daisyui": "^5.5.23",
 		"drizzle-kit": "^0.31.10",
 		"esbuild": "^0.28.0",
-		"tsx": "^4.22.4"
+		"happy-dom": "^20.10.6",
+		"tsx": "^4.22.4",
+		"vitest": "^4.1.9"
 	}
 }

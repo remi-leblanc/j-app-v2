@@ -126,11 +126,6 @@ function normalizeJlptLevel(
 		return Number.parseInt(trimmed, 10) as JlptLevel;
 	}
 
-	const match = trimmed.match(/^N([1-5])$/i);
-	if (match?.[1]) {
-		return Number.parseInt(match[1], 10) as JlptLevel;
-	}
-
 	return null;
 }
 

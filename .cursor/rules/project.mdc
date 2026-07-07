@@ -17,6 +17,7 @@ BDD: PostgreSQL
 ORM: Drizzle ORM
 Serveur production: VPS OVH (2 VCPU, 4 GB RAM, 40 GB SSD)
 Deploiement production: Coolify (avec Dockerfile)
+Tests: nuxt-utils & Vitest
 
 Respecter strictement ces versions. Ne pas introduire d'autres librairies UI sans validation explicite. Utiliser NPM comme package manager.
 
@@ -134,6 +135,7 @@ Les choix (bonnes ou mauvaises réponses) correspondent à 1 seul sens du mot, e
 - Les styles utilisent les classes Tailwind v4 et les composants DaisyUI v4 ; les CSS custom sont limités au minimum.
 - Les textes affichés à l'utilisateur sont en **français** ; les clés de traduction i18n sont en anglais pour anticiper le multilingue.
 - Chaque mode de jeu est un composant autonome réutilisable.
+- Toujours écrire les tests unitaires nécessaires pour suivre les bonnes pratiques lorsque du nouveau code est écrit.
 
 ---
 
