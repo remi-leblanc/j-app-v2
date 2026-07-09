@@ -6,7 +6,6 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { closeDb, drizzleDb } from "../server/db/import/insert-batch";
 import { wordAudio, wordKana, words } from "../server/db/schema";
 import type { JlptLevel } from "../server/db/import/types";
-import { synthesizeJapaneseOgg } from "../server/utils/google-tts";
 import {
 	audioFileExists,
 	getAudioFilePath,
@@ -17,6 +16,16 @@ import {
 	parseGlossLangs,
 	parseLevels,
 } from "../server/utils/word-filters";
+import {
+	createAudioQueries,
+	getStorageFormat,
+	getTtsProvider,
+	getVoicevoxConfigForLog,
+	initializeTtsProvider,
+	synthesizeJapaneseAudio,
+	synthesizeQueryBatch,
+	type TtsProvider,
+} from "../server/utils/tts";
 
 interface GenerateOptions {
 	levels: JlptLevel[];
@@ -25,6 +34,20 @@ interface GenerateOptions {
 	wordId: string | null;
 	force: boolean;
 	delayMs: number;
+	provider: TtsProvider;
+	batchSize: number;
+}
+
+interface PendingReading {
+	wordId: string;
+	reading: string;
+}
+
+function parseProvider(value: string | undefined): TtsProvider {
+	const normalized = value?.trim().toLowerCase();
+	if (normalized === "google") return "google";
+	if (normalized === "voicevox") return "voicevox";
+	return getTtsProvider();
 }
 
 function parseOptions(): GenerateOptions {
@@ -36,6 +59,8 @@ function parseOptions(): GenerateOptions {
 			"word-id": { type: "string" },
 			force: { type: "boolean", default: false },
 			"delay-ms": { type: "string", default: "100" },
+			provider: { type: "string" },
+			"batch-size": { type: "string", default: "10" },
 		},
 		allowPositionals: false,
 	});
@@ -44,6 +69,7 @@ function parseOptions(): GenerateOptions {
 	const glossLangs = parseGlossLangs(values.langs);
 	const parsedLimit = values.limit ? Number.parseInt(values.limit, 10) : null;
 	const delayMs = Number.parseInt(values["delay-ms"] ?? "100", 10);
+	const batchSize = Number.parseInt(values["batch-size"] ?? "10", 10);
 
 	return {
 		levels: levels.length > 0 ? levels : [5],
@@ -55,6 +81,9 @@ function parseOptions(): GenerateOptions {
 		wordId: values["word-id"]?.trim() || null,
 		force: values.force ?? false,
 		delayMs: Number.isNaN(delayMs) ? 100 : delayMs,
+		provider: parseProvider(values.provider),
+		batchSize:
+			Number.isNaN(batchSize) || batchSize < 1 ? 10 : Math.min(batchSize, 50),
 	};
 }
 
@@ -77,33 +106,31 @@ async function upsertAudioRecord(wordId: string, reading: string): Promise<void>
 		.onConflictDoNothing();
 }
 
-async function generateReadingAudio(
+async function isReadingAlreadyGenerated(
 	wordId: string,
 	reading: string,
 	force: boolean,
-): Promise<"skipped" | "generated"> {
+): Promise<boolean> {
+	if (force) return false;
+
 	const existsInDb = await drizzleDb
 		.select({ wordId: wordAudio.wordId })
 		.from(wordAudio)
-		.where(
-			and(eq(wordAudio.wordId, wordId), eq(wordAudio.reading, reading)),
-		)
+		.where(and(eq(wordAudio.wordId, wordId), eq(wordAudio.reading, reading)))
 		.limit(1);
 
-	const fileExists = audioFileExists(wordId, reading);
+	return existsInDb.length > 0 && audioFileExists(wordId, reading);
+}
 
-	if (!force && existsInDb.length > 0 && fileExists) {
-		return "skipped";
-	}
-
+async function writeReadingAudio(
+	wordId: string,
+	reading: string,
+	audioBuffer: Buffer,
+): Promise<void> {
 	await ensureAudioDir(wordId, reading);
-
-	const audioBuffer = await synthesizeJapaneseOgg(reading);
 	const filePath = getAudioFilePath(wordId, reading);
 	await writeFile(filePath, audioBuffer);
 	await upsertAudioRecord(wordId, reading);
-
-	return "generated";
 }
 
 async function fetchWordIds(options: GenerateOptions): Promise<string[]> {
@@ -139,11 +166,131 @@ async function fetchKanaReadings(wordId: string): Promise<string[]> {
 	return [...readings];
 }
 
+async function collectPendingReadings(
+	wordIds: string[],
+	force: boolean,
+): Promise<{ pending: PendingReading[]; skipped: number }> {
+	const pending: PendingReading[] = [];
+	let skipped = 0;
+
+	for (const wordId of wordIds) {
+		const readings = await fetchKanaReadings(wordId);
+		if (readings.length === 0) {
+			console.warn(`  [${wordId}] No kana readings — skipped`);
+			continue;
+		}
+
+		for (const reading of readings) {
+			if (await isReadingAlreadyGenerated(wordId, reading, force)) {
+				skipped += 1;
+				continue;
+			}
+			pending.push({ wordId, reading });
+		}
+	}
+
+	return { pending, skipped };
+}
+
+function chunkArray<T>(items: T[], size: number): T[][] {
+	const chunks: T[][] = [];
+	for (let i = 0; i < items.length; i += size) {
+		chunks.push(items.slice(i, i + size));
+	}
+	return chunks;
+}
+
+async function generateWithVoicevox(
+	pending: PendingReading[],
+	options: GenerateOptions,
+): Promise<{ generated: number; errors: number }> {
+	const voicevoxConfig = getVoicevoxConfigForLog();
+	let generated = 0;
+	let errors = 0;
+
+	const chunks = chunkArray(pending, options.batchSize);
+
+	for (const chunk of chunks) {
+		const uniqueReadings = [...new Set(chunk.map((item) => item.reading))];
+		try {
+			const queryItems = await createAudioQueries(uniqueReadings, voicevoxConfig);
+			const audioByReading = await synthesizeQueryBatch(
+				queryItems,
+				voicevoxConfig,
+			);
+
+			for (const item of chunk) {
+				const audioBuffer = audioByReading.get(item.reading);
+				if (!audioBuffer) {
+					errors += 1;
+					console.error(
+						`  [${item.wordId}] Missing audio for "${item.reading}"`,
+					);
+					continue;
+				}
+
+				await writeReadingAudio(item.wordId, item.reading, audioBuffer);
+				generated += 1;
+				console.log(`  [${item.wordId}] Generated: ${item.reading}`);
+			}
+		} catch (error) {
+			errors += chunk.length;
+			const message =
+				error instanceof Error ? error.message : String(error);
+			console.error(`  Batch error (${chunk.length} reading(s)): ${message}`);
+		}
+
+		if (options.delayMs > 0) {
+			await sleep(options.delayMs);
+		}
+	}
+
+	return { generated, errors };
+}
+
+async function generateWithGoogle(
+	pending: PendingReading[],
+	options: GenerateOptions,
+): Promise<{ generated: number; errors: number }> {
+	let generated = 0;
+	let errors = 0;
+
+	for (const item of pending) {
+		try {
+			const audioBuffer = await synthesizeJapaneseAudio(item.reading);
+			await writeReadingAudio(item.wordId, item.reading, audioBuffer);
+			generated += 1;
+			console.log(`  [${item.wordId}] Generated: ${item.reading}`);
+
+			if (options.delayMs > 0) {
+				await sleep(options.delayMs);
+			}
+		} catch (error) {
+			errors += 1;
+			const message =
+				error instanceof Error ? error.message : String(error);
+			console.error(
+				`  [${item.wordId}] Error for "${item.reading}": ${message}`,
+			);
+		}
+	}
+
+	return { generated, errors };
+}
+
 async function main(): Promise<void> {
 	const options = parseOptions();
 
 	console.log("Audio TTS generation");
 	console.log(`  Directory: ${resolveAudioDir()}`);
+	console.log(`  Provider: ${options.provider}`);
+	console.log(`  Format: ${getStorageFormat()}`);
+	if (options.provider === "voicevox") {
+		const config = getVoicevoxConfigForLog();
+		console.log(`  VOICEVOX URL: ${config.baseUrl}`);
+		console.log(`  VOICEVOX speaker: ${config.speaker}`);
+		console.log(`  Batch size: ${options.batchSize}`);
+	}
 	console.log(`  JLPT levels: ${options.levels.join(", ")}`);
 	if (options.glossLangs.length > 0) {
 		console.log(`  Gloss languages: ${options.glossLangs.join(", ")}`);
@@ -154,52 +301,33 @@ async function main(): Promise<void> {
 	if (options.wordId) console.log(`  Word ID: ${options.wordId}`);
 	console.log(`  Force: ${options.force}`);
 
+	await initializeTtsProvider(options.provider);
+
 	const wordIds = await fetchWordIds(options);
 	console.log(`Found ${wordIds.length} word(s) to process`);
 
-	let wordsProcessed = 0;
+	const { pending, skipped: skippedCount } = await collectPendingReadings(
+		wordIds,
+		options.force,
+	);
+	console.log(`Pending: ${pending.length}, skipped: ${skippedCount}`);
+
 	let generated = 0;
-	let skipped = 0;
 	let errors = 0;
 
-	for (const wordId of wordIds) {
-		const readings = await fetchKanaReadings(wordId);
-		if (readings.length === 0) {
-			console.warn(`  [${wordId}] No kana readings — skipped`);
-			continue;
-		}
-
-		wordsProcessed += 1;
-
-		for (const reading of readings) {
-			try {
-				const result = await generateReadingAudio(
-					wordId,
-					reading,
-					options.force,
-				);
-				if (result === "generated") {
-					generated += 1;
-					console.log(`  [${wordId}] Generated: ${reading}`);
-				} else {
-					skipped += 1;
-				}
-				if (options.delayMs > 0) {
-					await sleep(options.delayMs);
-				}
-			} catch (error) {
-				errors += 1;
-				const message =
-					error instanceof Error ? error.message : String(error);
-				console.error(`  [${wordId}] Error for "${reading}": ${message}`);
-			}
-		}
+	if (pending.length > 0) {
+		const result =
+			options.provider === "voicevox"
+				? await generateWithVoicevox(pending, options)
+				: await generateWithGoogle(pending, options);
+		generated = result.generated;
+		errors = result.errors;
 	}
 
 	console.log("\nDone.");
-	console.log(`  Words processed: ${wordsProcessed}`);
+	console.log(`  Words scanned: ${wordIds.length}`);
 	console.log(`  Audio generated: ${generated}`);
-	console.log(`  Audio skipped: ${skipped}`);
+	console.log(`  Audio skipped: ${skippedCount}`);
 	console.log(`  Errors: ${errors}`);
 }
 

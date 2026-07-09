@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "~~/server/db";
 import { wordAudio } from "~~/server/db/schema";
+import { resolveSiteUrl } from "~~/server/utils/site-url";
 import {
 	audioFileExists,
 	getAudioUrl,
@@ -18,9 +19,12 @@ export async function resolveAudioUrl(
 		)
 		.limit(1);
 
-	if (!entry || !audioFileExists(wordId, reading)) {
+	const siteUrl = resolveSiteUrl();
+	const verifyLocalFile = process.env.NODE_ENV === "production";
+
+	if (!entry || (verifyLocalFile && !audioFileExists(wordId, reading))) {
 		return null;
 	}
 
-	return getAudioUrl(wordId, reading);
+	return getAudioUrl(wordId, reading, siteUrl);
 }

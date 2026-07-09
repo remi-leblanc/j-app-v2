@@ -5,6 +5,7 @@ import { wordAudio } from "~~/server/db/schema";
 import {
 	audioFileExists,
 	getAudioFilePath,
+	getAudioMimeType,
 	isPathWithinAudioDir,
 } from "~~/shared/utils/audio-tts";
 
@@ -45,7 +46,7 @@ export default defineEventHandler(async (event) => {
 	}
 
 	setResponseHeaders(event, {
-		"Content-Type": "audio/ogg",
+		"Content-Type": getAudioMimeType(),
 		"Cache-Control": "public, max-age=31536000, immutable",
 	});
 
