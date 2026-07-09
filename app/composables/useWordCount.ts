@@ -17,7 +17,7 @@ export function useWordCount() {
 			if (settings.value.levels.length > 0) {
 				query.levels = settings.value.levels.join(",");
 			}
-			if (settings.value.mode === "oral") {
+			if (settings.value.mode === "oral" || settings.value.mode === "expression") {
 				query.requireAudio = "true";
 			}
 			const data = await $fetch<{ count: number }>("/api/words/count", {

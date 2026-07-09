@@ -7,6 +7,7 @@ export interface GameWord {
 	displayWriting: string;
 	displayReading: string;
 	readings: string[];
+	kanjiWritings: string[];
 	translations: string[];
 	senses: GameWordSense[];
 }
@@ -43,3 +44,5 @@ export interface QcmChoicesResponse {
 }
 
 export type OralStep = "choice" | "feedback";
+
+export type ExpressionStep = "listen" | "feedback";

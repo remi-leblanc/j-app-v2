@@ -18,7 +18,7 @@ const apiQuery = computed(() => {
 	if (route.query.maxWords) {
 		query.maxWords = String(route.query.maxWords);
 	}
-	if (mode.value === "oral") {
+	if (mode.value === "oral" || mode.value === "expression") {
 		query.requireAudio = "true";
 	}
 
@@ -46,6 +46,8 @@ const words = computed(() => data.value?.words ?? []);
 
 const isQcmMode = computed(() => mode.value === "qcm");
 const isOralMode = computed(() => mode.value === "oral");
+const isExpressionMode = computed(() => mode.value === "expression");
+const showPronunciationVolume = computed(() => isOralMode.value || isExpressionMode.value);
 
 const {
 	phase: lecturePhase,
@@ -107,16 +109,53 @@ const {
 } = useOralGame(words, qcmFilterQuery, isOralMode);
 
 const {
-	isPlaying: oralIsPlaying,
-	isLoading: oralIsAudioLoading,
-	error: oralAudioError,
-	play: playOralAudio,
-	stop: stopOralAudio,
-} = useJapaneseSpeech();
+	phase: expressionPhase,
+	currentWord: expressionCurrentWord,
+	step: expressionStep,
+	pronunciationCorrect: expressionPronunciationCorrect,
+	recognizedTranscript: expressionRecognizedTranscript,
+	isValidated: expressionIsValidated,
+	audioUrl: expressionAudioUrl,
+	correctCount: expressionCorrectCount,
+	errorCount: expressionErrorCount,
+	currentWordNumber: expressionCurrentWordNumber,
+	totalWords: expressionTotalWords,
+	results: expressionResults,
+	choicesPending: expressionChoicesPending,
+	choicesError: expressionChoicesError,
+	handleRecognitionResult: expressionHandleRecognitionResult,
+	skipWord: expressionSkipWord,
+	nextWord: expressionNextWord,
+} = useExpressionGame(words, qcmFilterQuery, isExpressionMode);
+
+const {
+	isSupported: expressionSpeechSupported,
+	isListening: expressionIsListening,
+	interimTranscript: expressionInterimTranscript,
+	error: expressionSpeechRecognitionError,
+	start: startExpressionListening,
+	stop: stopExpressionListening,
+} = useSpeechRecognition({
+	onResult: (payload) => expressionHandleRecognitionResult(payload),
+});
+
+const expressionSpeechError = computed(() => getSpeechErrorMessage(expressionSpeechRecognitionError.value));
+
+const { isPlaying: oralIsPlaying, isLoading: oralIsAudioLoading, error: oralAudioError, play: playOralAudio, stop: stopOralAudio } = useJapaneseSpeech();
+
+const { isPlaying: expressionIsPlaying, isLoading: expressionIsAudioLoading, error: expressionAudioError, play: playExpressionAudio, stop: stopExpressionAudio } = useJapaneseSpeech();
 
 watch(
 	() => oralCurrentWord.value?.id,
 	() => stopOralAudio(),
+);
+
+watch(
+	() => expressionCurrentWord.value?.id,
+	() => {
+		stopExpressionAudio();
+		stopExpressionListening();
+	},
 );
 
 function handlePlayOralAudio() {
@@ -129,6 +168,29 @@ function handleOralNext() {
 	stopOralAudio();
 	oralNextWord();
 }
+
+function handleStartExpressionListening() {
+	stopExpressionAudio();
+	startExpressionListening();
+}
+
+function handlePlayExpressionAudio() {
+	if (expressionAudioUrl.value) {
+		playExpressionAudio(expressionAudioUrl.value);
+	}
+}
+
+function handleExpressionSkip() {
+	stopExpressionAudio();
+	stopExpressionListening();
+	expressionSkipWord();
+}
+
+function handleExpressionNext() {
+	stopExpressionAudio();
+	stopExpressionListening();
+	expressionNextWord();
+}
 </script>
 
 <template>
@@ -138,10 +200,10 @@ function handleOralNext() {
 				<Icon name="formkit:arrowleft" />
 			</NuxtLink>
 		</div>
-		<div class="navbar-center">
-			J-App
+		<div class="navbar-center">J-App</div>
+		<div class="navbar-end">
+			<GamePlaySettingsMenu :show-pronunciation-volume="showPronunciationVolume" />
 		</div>
-		<div class="navbar-end"></div>
 	</div>
 	<div class="flex min-h-screen items-center justify-center p-4">
 		<div v-if="pending" class="flex flex-col items-center gap-4">
@@ -187,10 +249,7 @@ function handleOralNext() {
 				</div>
 			</div>
 
-			<div
-				v-else-if="qcmChoicesPending"
-				class="flex flex-col items-center gap-4"
-			>
+			<div v-else-if="qcmChoicesPending" class="flex flex-col items-center gap-4">
 				<span class="loading loading-spinner loading-lg" />
 				<p>Chargement des choix…</p>
 			</div>
@@ -225,10 +284,7 @@ function handleOralNext() {
 				</div>
 			</div>
 
-			<div
-				v-else-if="oralChoicesPending"
-				class="flex flex-col items-center gap-4"
-			>
+			<div v-else-if="oralChoicesPending" class="flex flex-col items-center gap-4">
 				<span class="loading loading-spinner loading-lg" />
 				<p>Chargement des choix…</p>
 			</div>
@@ -253,7 +309,47 @@ function handleOralNext() {
 				@next="handleOralNext()"
 			/>
 		</template>
+
+		<template v-else-if="mode === 'expression'">
+			<GameResults v-if="expressionPhase === 'results'" :results="expressionResults" />
+
+			<div v-else-if="expressionChoicesError" class="alert alert-warning max-w-lg">
+				<div>
+					<p>Impossible de charger l'audio pour ce mot.</p>
+					<NuxtLink to="/" class="btn btn-sm btn-primary mt-4"> Retour à l'accueil </NuxtLink>
+				</div>
+			</div>
+
+			<div v-else-if="expressionChoicesPending" class="flex flex-col items-center gap-4">
+				<span class="loading loading-spinner loading-lg" />
+				<p>Chargement de l'audio…</p>
+			</div>
+
+			<GameExpressionCard
+				v-else-if="expressionCurrentWord"
+				:word="expressionCurrentWord"
+				:step="expressionStep"
+				:is-validated="expressionIsValidated"
+				:pronunciation-correct="expressionPronunciationCorrect"
+				:audio-url="expressionAudioUrl"
+				:is-playing="expressionIsPlaying"
+				:is-audio-loading="expressionIsAudioLoading"
+				:audio-error="expressionAudioError"
+				:is-supported="expressionSpeechSupported"
+				:is-listening="expressionIsListening"
+				:interim-transcript="expressionInterimTranscript"
+				:recognized-transcript="expressionRecognizedTranscript"
+				:speech-error="expressionSpeechError"
+				:current-word-number="expressionCurrentWordNumber"
+				:total-words="expressionTotalWords"
+				:correct-count="expressionCorrectCount"
+				:incorrect-count="expressionErrorCount"
+				@start-listening="handleStartExpressionListening()"
+				@play-audio="handlePlayExpressionAudio()"
+				@skip="handleExpressionSkip()"
+				@next="handleExpressionNext()"
+			/>
+		</template>
 	</div>
 
-	<GamePlaySettingsMenu :show-pronunciation-volume="isOralMode" />
 </template>

@@ -15,8 +15,8 @@ function fromPercent(value: number): number {
 </script>
 
 <template>
-	<div class="fixed bottom-4 right-4 z-50">
-		<div class="dropdown dropdown-top dropdown-end">
+	<div class="">
+		<div class="dropdown dropdown-end">
 			<button
 				type="button"
 				tabindex="0"
@@ -27,7 +27,7 @@ function fromPercent(value: number): number {
 			</button>
 			<div
 				tabindex="0"
-				class="dropdown-content menu z-50 mb-2 w-72 rounded-box bg-base-200 p-4 shadow-xl"
+				class="dropdown-content menu w-72 rounded-box bg-base-300 p-4 shadow-xl"
 			>
 				<fieldset class="fieldset gap-4 p-0">
 					<legend class="fieldset-legend text-base font-semibold">

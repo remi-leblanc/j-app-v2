@@ -14,6 +14,7 @@ function createGameWord(
 	return {
 		displayWriting: overrides.displayWriting ?? overrides.displayReading,
 		readings: overrides.readings ?? [overrides.displayReading],
+		kanjiWritings: overrides.kanjiWritings ?? [],
 		translations: overrides.translations ?? ["traduction"],
 		senses: overrides.senses ?? [{ glosses: ["traduction"] }],
 		...overrides,

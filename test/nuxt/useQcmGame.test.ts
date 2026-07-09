@@ -7,6 +7,7 @@ function createGameWord(
 	return {
 		displayWriting: overrides.displayWriting ?? overrides.displayReading,
 		readings: overrides.readings ?? [overrides.displayReading],
+		kanjiWritings: overrides.kanjiWritings ?? [],
 		translations: overrides.translations ?? ["chat"],
 		senses: overrides.senses ?? [{ glosses: ["chat"] }],
 		...overrides,

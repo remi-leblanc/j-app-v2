@@ -115,6 +115,7 @@ export async function hydrateGameWords(wordIds: string[]): Promise<GameWord[]> {
 		if (!display) continue;
 
 		const readings = uniqueStrings(kana.map((k) => k.text));
+		const kanjiWritings = uniqueStrings(kanji.map((k) => k.text));
 		const senses = buildSenses(wordId);
 		const translations = uniqueStrings(
 			senses.flatMap((sense) => sense.glosses),
@@ -129,6 +130,7 @@ export async function hydrateGameWords(wordIds: string[]): Promise<GameWord[]> {
 			displayWriting: display.writing,
 			displayReading: display.reading,
 			readings,
+			kanjiWritings,
 			translations,
 			senses,
 		});

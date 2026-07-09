@@ -115,15 +115,21 @@ Validation :
 - Nombre d'erreurs
 - Temps moyen par réponse correcte
 
-### Mode Compréhension orale
-
-Identique au mode Lecture, sauf : le mot n'est pas affiché visuellement. Un bouton joue un fichier audio du mot en japonais. L'utilisateur saisit ensuite romaji + traduction.
-
 ### Mode QCM
 
 Identique au mode Lecture, sauf : il n'y a pas d'inputs de romaji et traductions, l'utilisateur ne doit pas écrire manuellement. A la place, 4 choix de transcription romaji lui sont proposés: l'utilisateur doit choisir. Ensuite, 4 choix de traductions sont proposés: l'utilisateur doit choisir. Dans ces 4 choix, 3 sont des mauvaises réponses aléatoire issues des autres mots de la sélection de la partie, et 1 bonne réponse.
 
 Les choix (bonnes ou mauvaises réponses) correspondent à 1 seul sens du mot, et le texte affiché est une concaténation des différentes traductions de ce même sens, le cas échéant.
+
+### Mode Compréhension orale
+
+Identique au mode QCM sauf que le mot n'est pas affiché visuellement. Un bouton joue un fichier audio du mot en japonais. L'utilisateur doit ensuite choisir la bonne traduction parmi les 4 proposition.
+
+Les fichiers audio des mots sont généré via une API TTS (Google Cloud) à partir d'un script qui récupère les mots depuis la base de données. Ce script est prévu pour être utiliser sur le serveur en production pour y être stocké. Les fichiers sont ainsi récupéré directement depuis le serveur, même en local, pour éviter de devoir générer plusieurs fois les fichiers audio selon l'environnement.
+
+### Mode Expression orale
+
+Un mode de jeu où l'utilisateur doit prononcer les mots correctement pour les valider. L'API Web Speech (Speech Recognition) est utilisée pour convertir l'audio en texte et ainsi comparer le mot prononcé au mot du jeu en cours. Seulement la version hiragana est utilisée des 2 côtés pour être sûr que seule la prononciation soit prise en compte, car un kanji peut avoir plusieurs prononciations et inversement.
 
 ---
 

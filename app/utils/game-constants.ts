@@ -2,7 +2,7 @@ export type WordCategory = "nom" | "verbe" | "adjectif" | "adverbe" | "autre";
 
 export type JlptLevel = 1 | 2 | 3 | 4 | 5;
 
-export type GameMode = "lecture" | "oral" | "qcm";
+export type GameMode = "lecture" | "oral" | "qcm" | "expression";
 
 export const DEFAULT_WORD_COUNT = 20;
 export const MAX_WORD_COUNT = 100;
@@ -54,5 +54,10 @@ export const GAME_MODE_OPTIONS: GameModeOption[] = [
 		value: "oral",
 		label: "Compréhension orale",
 		description: "Écoute le mot via la synthèse vocale, puis saisis tes réponses.",
+	},
+	{
+		value: "expression",
+		label: "Expression orale",
+		description: "Lis le mot affiché et prononce-le à voix haute.",
 	},
 ];
