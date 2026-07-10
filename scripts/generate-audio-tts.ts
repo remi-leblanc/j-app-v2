@@ -2,7 +2,7 @@ import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { parseArgs } from "node:util";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { closeDb, drizzleDb } from "../server/db/import/insert-batch";
 import { wordAudio, wordKana, words } from "../server/db/schema";
 import type { JlptLevel } from "../server/db/import/types";
@@ -53,7 +53,7 @@ function parseProvider(value: string | undefined): TtsProvider {
 function parseOptions(): GenerateOptions {
 	const { values } = parseArgs({
 		options: {
-			levels: { type: "string", default: "" },
+			levels: { type: "string" },
 			langs: { type: "string", default: "fre" },
 			limit: { type: "string" },
 			"word-id": { type: "string" },
@@ -138,10 +138,11 @@ async function fetchWordIds(options: GenerateOptions): Promise<string[]> {
 		return [options.wordId];
 	}
 
-	const conditions = [
-		...buildWordFilterConditions([], options.levels, options.glossLangs),
-		isNotNull(words.jlptLevel),
-	];
+	const conditions = buildWordFilterConditions(
+		[],
+		options.levels,
+		options.glossLangs,
+	);
 
 	const rows = await drizzleDb
 		.select({ id: words.id })
@@ -291,7 +292,11 @@ async function main(): Promise<void> {
 		console.log(`  VOICEVOX speaker: ${config.speaker}`);
 		console.log(`  Batch size: ${options.batchSize}`);
 	}
-	console.log(`  JLPT levels: ${options.levels.join(", ")}`);
+	if (options.levels.length > 0) {
+		console.log(`  JLPT levels: ${options.levels.join(", ")}`);
+	} else {
+		console.log("  JLPT levels: (all — including words without level)");
+	}
 	if (options.glossLangs.length > 0) {
 		console.log(`  Gloss languages: ${options.glossLangs.join(", ")}`);
 	} else {
