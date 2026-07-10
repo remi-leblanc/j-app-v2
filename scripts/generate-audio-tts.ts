@@ -53,7 +53,7 @@ function parseProvider(value: string | undefined): TtsProvider {
 function parseOptions(): GenerateOptions {
 	const { values } = parseArgs({
 		options: {
-			levels: { type: "string", default: "5" },
+			levels: { type: "string", default: "" },
 			langs: { type: "string", default: "fre" },
 			limit: { type: "string" },
 			"word-id": { type: "string" },
@@ -72,7 +72,7 @@ function parseOptions(): GenerateOptions {
 	const batchSize = Number.parseInt(values["batch-size"] ?? "10", 10);
 
 	return {
-		levels: levels.length > 0 ? levels : [5],
+		levels,
 		glossLangs,
 		limit:
 			parsedLimit !== null && !Number.isNaN(parsedLimit) && parsedLimit > 0
